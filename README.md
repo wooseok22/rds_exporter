@@ -27,6 +27,7 @@ instances:
     instance: rds-mysql57
     aws_access_key: AKIAIOSFODNN7EXAMPLE
     aws_secret_key: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+    aws_role_arn: arn:aws:iam::1111111:role/iam-role
     disable_basic_metrics: true
     disable_enhanced_metrics: false
     labels:
