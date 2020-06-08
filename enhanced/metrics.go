@@ -177,7 +177,7 @@ func parseOSMetrics(config *config.Config, b []byte, disallowUnknownFields bool)
 	for _, instance := range config.Instances {
 		target := reflect.ValueOf(m)
 
-		for i := 0; i < target.Len(); i++ {
+		for i := 0; i < target.Type().Len(); i++ {
 			for _, blackListMember := range instance.MetricsBlackList {
 				if blackListMember == target.Type().Field(i).Name {
 					target.Field(i).Elem().Set(reflect.Zero(target.Type().Field(i).Type))
