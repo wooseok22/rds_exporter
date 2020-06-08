@@ -25,6 +25,7 @@ type Instance struct {
 	AWSRoleARN             string            `yaml:"aws_role_arn"`
 	DisableBasicMetrics    bool              `yaml:"disable_basic_metrics"`
 	DisableEnhancedMetrics bool              `yaml:"disable_enhanced_metrics"`
+	MetricsBlackList       []string          `yaml:"metrics_black_list"`
 	Labels                 map[string]string `yaml:"labels"` // may be empty
 
 	// TODO Type InstanceType `yaml:"type"` // may be empty for old pmm-managed

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/percona/rds_exporter/config"
 	"reflect"
 	"strconv"
 	"time"
@@ -162,7 +163,7 @@ type tasks struct {
 }
 
 // parseOSMetrics parses OS metrics from given JSON data.
-func parseOSMetrics(b []byte, disallowUnknownFields bool) (*osMetrics, error) {
+func parseOSMetrics(config *config.Config, b []byte, disallowUnknownFields bool) (*osMetrics, error) {
 	d := json.NewDecoder(bytes.NewReader(b))
 	if disallowUnknownFields {
 		d.DisallowUnknownFields()
@@ -172,6 +173,20 @@ func parseOSMetrics(b []byte, disallowUnknownFields bool) (*osMetrics, error) {
 	if err := d.Decode(&m); err != nil {
 		return nil, err
 	}
+
+	for _, instance := range config.Instances {
+		target := reflect.ValueOf(m)
+
+		for i := 0; i < target.Len(); i++ {
+			for _, blackListMember := range instance.MetricsBlackList {
+				if blackListMember == target.Type().Field(i).Name {
+					target.Field(i).Elem().Set(reflect.Zero(target.Type().Field(i).Type))
+				}
+			}
+		}
+	}
+
+
 	return &m, nil
 }
 
