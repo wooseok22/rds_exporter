@@ -3,6 +3,7 @@ package enhanced
 import (
 	"context"
 	"fmt"
+	"github.com/percona/rds_exporter/config"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -41,7 +42,7 @@ func newScraper(session *session.Session, instances []sessions.Instance) *scrape
 }
 
 // start scrapes metrics in loop and sends them to the channel until context is canceled.
-func (s *scraper) start(ctx context.Context, interval time.Duration, ch chan<- map[string][]prometheus.Metric) {
+func (s *scraper) start(config *config.Config, ctx context.Context, interval time.Duration, ch chan<- map[string][]prometheus.Metric) {
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 
@@ -54,14 +55,14 @@ func (s *scraper) start(ctx context.Context, interval time.Duration, ch chan<- m
 		}
 
 		scrapeCtx, cancel := context.WithTimeout(ctx, interval)
-		m, _ := s.scrape(scrapeCtx)
+		m, _ := s.scrape(config, scrapeCtx)
 		cancel()
 		ch <- m
 	}
 }
 
 // scrape performs a single scrape.
-func (s *scraper) scrape(ctx context.Context) (map[string][]prometheus.Metric, map[string]string) {
+func (s *scraper) scrape(config *config.Config, ctx context.Context) (map[string][]prometheus.Metric, map[string]string) {
 	input := &cloudwatchlogs.FilterLogEventsInput{
 		LogGroupName:   aws.String("RDSOSMetrics"),
 		LogStreamNames: aws.StringSlice(s.logStreamNames),
@@ -97,7 +98,7 @@ func (s *scraper) scrape(ctx context.Context) (map[string][]prometheus.Metric, m
 			l = l.With("region", instance.Region).With("instance", instance.Instance)
 
 			// l.Debugf("Message:\n%s", *event.Message)
-			osMetrics, err := parseOSMetrics([]byte(*event.Message), s.testDisallowUnknownFields)
+			osMetrics, err := parseOSMetrics(config, []byte(*event.Message), s.testDisallowUnknownFields)
 			if err != nil {
 				// only for tests
 				if s.testDisallowUnknownFields {

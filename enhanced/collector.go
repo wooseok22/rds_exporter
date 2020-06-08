@@ -2,6 +2,7 @@ package enhanced
 
 import (
 	"context"
+	"github.com/percona/rds_exporter/config"
 	"sync"
 	"time"
 
@@ -27,7 +28,7 @@ const (
 )
 
 // NewCollector creates new collector and starts scrapers.
-func NewCollector(sessions *sessions.Sessions) *Collector {
+func NewCollector(config *config.Config, sessions *sessions.Sessions) *Collector {
 	c := &Collector{
 		sessions: sessions,
 		logger:   log.With("component", "enhanced"),
@@ -49,7 +50,7 @@ func NewCollector(sessions *sessions.Sessions) *Collector {
 		s.logger.Infof("Updating enhanced metrics every %s.", interval)
 
 		// perform first scrapes synchronously so returned collector has all metric descriptions
-		m, _ := s.scrape(context.TODO())
+		m, _ := s.scrape(config, context.TODO())
 		c.setMetrics(m)
 
 		ch := make(chan map[string][]prometheus.Metric)
@@ -58,7 +59,7 @@ func NewCollector(sessions *sessions.Sessions) *Collector {
 				c.setMetrics(m)
 			}
 		}()
-		go s.start(context.TODO(), interval, ch)
+		go s.start(config, context.TODO(), interval, ch)
 	}
 
 	return c
