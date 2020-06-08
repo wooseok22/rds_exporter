@@ -180,7 +180,7 @@ func parseOSMetrics(config *config.Config, b []byte, disallowUnknownFields bool)
 		for i := 0; i < reflect.TypeOf(m).NumField(); i++ {
 			for _, blackListMember := range instance.MetricsBlackList {
 				if blackListMember == target.Type().Field(i).Name {
-					target.Field(i).Elem().Set(reflect.Zero(target.Type().Field(i).Type))
+					reflect.Zero(target.Type().Field(i).Type)
 				}
 			}
 		}
