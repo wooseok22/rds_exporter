@@ -55,7 +55,7 @@ func main() {
 	// enhanced metrics
 	{
 		registry := prometheus.NewRegistry()
-		registry.MustRegister(enhanced.NewCollector(sess))
+		registry.MustRegister(enhanced.NewCollector(cfg, sess))
 		http.Handle(*enhancedMetricsPathF, promhttp.HandlerFor(registry, promhttp.HandlerOpts{
 			ErrorLog:      log.NewErrorLogger(),
 			ErrorHandling: promhttp.ContinueOnError,
