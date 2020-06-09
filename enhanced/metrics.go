@@ -177,19 +177,21 @@ func parseOSMetrics(b []byte, disallowUnknownFields bool) (*osMetrics, error) {
 }
 
 func filterBlackList(value reflect.Value) bool {
-	for _, blackListMember := range blackListField {
-		if blackListMember == value.Interface() {
-			return true
+	for i := 0; i < reflect.TypeOf(value).NumField(); i++ {
+		for _, blackListMember := range blackListField {
+			if blackListMember == value.Type().Field(i).Name {
+				return false
+			}
 		}
 	}
-	return false
+	return true
 }
 
 // makeGauge returns Prometheus gauge for given reflect.Value.
 func makeGauge(desc *prometheus.Desc, labelValues []string, value reflect.Value) prometheus.Metric {
 	// skip nil fields
 	if value.Kind() == reflect.Ptr {
-		if value.IsNil() || filterBlackList(value){
+		if value.IsNil(){
 			return nil
 		}
 		value = value.Elem()
@@ -218,7 +220,7 @@ func makeGenericMetrics(s interface{}, namePrefix string, constLabels prometheus
 		name, help := tags.Get("json"), tags.Get("help")
 		desc := prometheus.NewDesc(namePrefix+name, help, nil, constLabels)
 		m := makeGauge(desc, nil, v.Field(i))
-		if m != nil {
+		if m != nil && filterBlackList(v) {
 			res = append(res, m)
 		}
 	}
@@ -242,7 +244,7 @@ func makeNodeCPUMetrics(s *cpuUtilization, constLabels prometheus.Labels) []prom
 		tags := t.Field(i).Tag
 		mode := tags.Get("json")
 		m := makeGauge(desc, []string{mode}, v.Field(i))
-		if m != nil {
+		if m != nil && filterBlackList(v) {
 			res = append(res, m)
 		}
 	}
@@ -266,7 +268,7 @@ func makeRDSDiskIOMetrics(s *diskIO, constLabels prometheus.Labels) []prometheus
 		}
 		desc := prometheus.NewDesc("rdsosmetrics_diskIO_"+name, help, labelKeys, constLabels)
 		m := makeGauge(desc, labelValues, v.Field(i))
-		if m != nil {
+		if m != nil && filterBlackList(v) {
 			res = append(res, m)
 		}
 	}
@@ -312,7 +314,7 @@ func makeRDSFileSysMetrics(s *fileSys, constLabels prometheus.Labels) []promethe
 		}
 		desc := prometheus.NewDesc("rdsosmetrics_fileSys_"+name, help, labelKeys, constLabels)
 		m := makeGauge(desc, labelValues, v.Field(i))
-		if m != nil {
+		if m != nil && filterBlackList(v) {
 			res = append(res, m)
 		}
 	}
@@ -363,7 +365,7 @@ func makeNodeMemoryMetrics(s *memory, constLabels prometheus.Labels) []prometheu
 		}
 		desc := prometheus.NewDesc("node_memory_"+suffix, "Memory information field "+suffix+".", nil, constLabels)
 		m := makeGauge(desc, nil, reflect.ValueOf(v.Field(i).Int()*multiplier))
-		if m != nil {
+		if m != nil && filterBlackList(v) {
 			res = append(res, m)
 		}
 	}
@@ -387,7 +389,7 @@ func makeRDSNetworkMetrics(s *network, constLabels prometheus.Labels) []promethe
 		}
 		desc := prometheus.NewDesc("rdsosmetrics_network_"+name, help, labelKeys, constLabels)
 		m := makeGauge(desc, labelValues, v.Field(i))
-		if m != nil {
+		if m != nil && filterBlackList(v) {
 			res = append(res, m)
 		}
 	}
@@ -416,7 +418,7 @@ func makeRDSProcessListMetrics(s *processList, constLabels prometheus.Labels) []
 		}
 		desc := prometheus.NewDesc("rdsosmetrics_processList_"+name, help, labelKeys, constLabels)
 		m := makeGauge(desc, labelValues, v.Field(i))
-		if m != nil {
+		if m != nil && filterBlackList(v) {
 			res = append(res, m)
 		}
 	}
@@ -437,7 +439,7 @@ func makeNodeMemorySwapMetrics(s *swap, constLabels prometheus.Labels) []prometh
 		}
 		desc := prometheus.NewDesc(name, help, nil, constLabels)
 		m := makeGauge(desc, nil, reflect.ValueOf(v.Field(i).Float()*multiplier))
-		if m != nil {
+		if m != nil && filterBlackList(v) {
 			res = append(res, m)
 		}
 	}
