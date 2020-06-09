@@ -3,9 +3,7 @@ package enhanced
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"github.com/percona/rds_exporter/config"
 	"reflect"
 	"strconv"
 	"time"
@@ -163,35 +161,8 @@ type tasks struct {
 	Zombie   int `json:"zombie"   help:"The number of child tasks that are inactive with an active parent task."`
 }
 
-
-func SetField(obj interface{}, name string, value interface{}) error {
-	// Fetch the field reflect.Value
-	structValue := reflect.ValueOf(obj).Elem()
-	structFieldValue := structValue.FieldByName(name)
-
-	if !structFieldValue.IsValid() {
-		return fmt.Errorf("No such field: %s in obj", name)
-	}
-
-	// If obj field value is not settable an error is thrown
-	if !structFieldValue.CanSet() {
-		return fmt.Errorf("Cannot set %s field value", name)
-	}
-
-	structFieldType := structFieldValue.Type()
-	val := reflect.ValueOf(value)
-	if structFieldType != val.Type() {
-		invalidTypeError := errors.New("Provided value type didn't match obj field type")
-		return invalidTypeError
-	}
-
-	structFieldValue.Set(val)
-	return nil
-}
-
-
 // parseOSMetrics parses OS metrics from given JSON data.
-func parseOSMetrics(config *config.Config, b []byte, disallowUnknownFields bool) (*osMetrics, error) {
+func parseOSMetrics(b []byte, disallowUnknownFields bool) (*osMetrics, error) {
 	d := json.NewDecoder(bytes.NewReader(b))
 	if disallowUnknownFields {
 		d.DisallowUnknownFields()
@@ -202,26 +173,23 @@ func parseOSMetrics(config *config.Config, b []byte, disallowUnknownFields bool)
 		return nil, err
 	}
 
-	for _, instance := range config.Instances {
-		target := reflect.ValueOf(m)
+	return &m, nil
+}
 
-		for i := 0; i < reflect.TypeOf(m).NumField(); i++ {
-			for _, blackListMember := range instance.MetricsBlackList {
-				if blackListMember == target.Type().Field(i).Name {
-					_ := SetField(&m, "blackListMember", nil)
-				}
-			}
+func filterBlackList(value reflect.Value) bool {
+	for _, blackListMember := range blackListField {
+		if blackListMember == value.Interface() {
+			return false
 		}
 	}
-
-	return &m, nil
+	return true
 }
 
 // makeGauge returns Prometheus gauge for given reflect.Value.
 func makeGauge(desc *prometheus.Desc, labelValues []string, value reflect.Value) prometheus.Metric {
 	// skip nil fields
 	if value.Kind() == reflect.Ptr {
-		if value.IsNil() {
+		if value.IsNil() || filterBlackList(value){
 			return nil
 		}
 		value = value.Elem()
