@@ -179,10 +179,10 @@ func parseOSMetrics(b []byte, disallowUnknownFields bool) (*osMetrics, error) {
 func filterBlackList(value reflect.Value) bool {
 	for _, blackListMember := range blackListField {
 		if blackListMember == value.Interface() {
-			return false
+			return true
 		}
 	}
-	return true
+	return false
 }
 
 // makeGauge returns Prometheus gauge for given reflect.Value.
